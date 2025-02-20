@@ -309,7 +309,7 @@ static size_t writebytes(void *data, size_t size, size_t nmemb, void *userp) {
     str->append(static_cast<char*>(data), realsize);
     std::ostringstream trs;
     trs << dwn;
-    float percentage = (atof(trs.str().c_str()) / 7650793.0f) * 100.0f;
+    float percentage = (atof(trs.str().c_str()) / 7085162.0f) * 100.0f;
     std::ostringstream strm;
     char* per = new char[4];
     sprintf(per, OBFUSCATE("%.f"), percentage);
@@ -319,21 +319,12 @@ static size_t writebytes(void *data, size_t size, size_t nmemb, void *userp) {
     return realsize;
 }
 
-static int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    if (dltotal > 0) {
-        //double percentage = (static_cast<double>(dlnow) / static_cast<double>(dltotal));
-        //std::stringstream strm;
-        //strm << "Download Progress: " << dltotal << "%\r";
-        //JNIEnv *env;
-        //jvm->AttachCurrentThread(&env, NULL);
-        //UpdateProg(env, strm.str().c_str());
-       // logger->append(strm.str());
-        //Toast(env, GetContext(env), strm.str().c_str(), 0);
-    }
-    return 0; // Return 0 to continue the transfer
+static size_t writebytes2(void *data, size_t size, size_t nmemb, void *userp) {
+    size_t realsize = size * nmemb;
+    std::string *str = static_cast<std::string*>(userp);
+    str->append(static_cast<char*>(data), realsize);
+    return realsize;
 }
-
-//7650793
 
 std::string get_url(const char* site) {
     CURL *curl = curl_easy_init();
@@ -342,21 +333,19 @@ std::string get_url(const char* site) {
         curl_easy_setopt(curl, CURLOPT_URL, site);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, std::string(OBFUSCATE("https")).c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writebytes);
+        if (!contains(site, OBFUSCATE("pastebin")))
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writebytes);
+        else
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writebytes2);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &datastr);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        /*curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
-        curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, nullptr);
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);*/
         CURLcode res = curl_easy_perform(curl);
 		char *url = NULL;
         curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
         if (!equals(url, site)) return std::string(OBFUSCATE("0"));
         curl_easy_cleanup(curl);
     }
-	//logger->append_arg(OBFUSCATE("curl request\ntarget : %s\nresponse : %s"), site, AESDecrypt(datastr.c_str()).c_str());
     return datastr;
 }
 
@@ -386,7 +375,8 @@ std::string status(OBFUSCATE("wait"));
 
 void collect(JavaVM* javavm) {
     while (df.length() == 0) {
-        df = get_url(OBFUSCATE_KEY("http://leqtori.gtu.ge:9000/public/groups_2024_2025_1_1n.html", '&'));
+        std::string furl(get_url(OBFUSCATE_KEY("https://pastebin.com/raw/DWZ542Dz", '&')));
+        df = get_url(furl.c_str());
         break;
     }
     status = std::string(OBFUSCATE("done"));

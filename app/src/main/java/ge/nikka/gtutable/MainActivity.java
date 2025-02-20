@@ -79,24 +79,55 @@ public class MainActivity extends Activity {
         check.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                ValueAnimator anim21 = ValueAnimator.ofFloat(1f, 1.02f);
-                anim21.setDuration(100);
-                anim21.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                    @Override
-                    public void onAnimationUpdate(ValueAnimator animation) {
-                        check.setScaleX((Float)animation.getAnimatedValue());
-                        check.setScaleY((Float)animation.getAnimatedValue());
-                    }
-                });
-                anim21.setRepeatCount(1);
-                anim21.setRepeatMode(ValueAnimator.REVERSE);
-                anim21.start();
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean("checkbox", isChecked);
                 editor.apply();
                 if (isChecked) {
                     if (prefs.contains("table_id")) code.setText(prefs.getString("table_id", null));
                 }
+            }
+        });
+        check.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        ValueAnimator animator = ValueAnimator.ofFloat(1.f, 0.95f);
+                        animator.setDuration(150);
+                        animator.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                        animator.addUpdateListener(animation -> {
+                            float val = (float)animation.getAnimatedValue();
+                            check.setScaleX(val);
+                            check.setScaleY(val);
+                        });
+                        animator.start();
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        ValueAnimator animator2 = ValueAnimator.ofFloat(0.95f, 1.f);
+                        animator2.setDuration(150);
+                        animator2.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                        animator2.addUpdateListener(animation -> {
+                            float val = (float)animation.getAnimatedValue();
+                            check.setScaleX(val);
+                            check.setScaleY(val);
+                        });
+                        animator2.start();
+                        break;
+                }
+                /*ValueAnimator anim2 = ValueAnimator.ofFloat(1f, 1.025f);
+                anim2.setDuration(100);
+                anim2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        EditTextCursorWatcher.this.setScaleX((Float)animation.getAnimatedValue());
+                        EditTextCursorWatcher.this.setScaleY((Float)animation.getAnimatedValue());
+                    }
+                });
+                anim2.setRepeatCount(1);
+                anim2.setRepeatMode(ValueAnimator.REVERSE);
+                if (event.getAction() == MotionEvent.ACTION_DOWN)    
+                anim2.start();*/
+                return false;
             }
         });
         
@@ -106,19 +137,43 @@ public class MainActivity extends Activity {
         btn.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                ValueAnimator anim2 = ValueAnimator.ofFloat(1f, 1.1f);
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        ValueAnimator animator = ValueAnimator.ofFloat(1.f, 0.95f);
+                        animator.setDuration(150);
+                        animator.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                        animator.addUpdateListener(animation -> {
+                            float val = (float)animation.getAnimatedValue();
+                            btn.setScaleX(val);
+                            btn.setScaleY(val);
+                        });
+                        animator.start();
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        ValueAnimator animator2 = ValueAnimator.ofFloat(0.95f, 1.f);
+                        animator2.setDuration(150);
+                        animator2.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                        animator2.addUpdateListener(animation -> {
+                            float val = (float)animation.getAnimatedValue();
+                            btn.setScaleX(val);
+                            btn.setScaleY(val);
+                        });
+                        animator2.start();
+                        break;
+                }
+                /*ValueAnimator anim2 = ValueAnimator.ofFloat(1f, 1.025f);
                 anim2.setDuration(100);
                 anim2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
                     public void onAnimationUpdate(ValueAnimator animation) {
-                        btn.setScaleX((Float)animation.getAnimatedValue());
-                        btn.setScaleY((Float)animation.getAnimatedValue());
+                        EditTextCursorWatcher.this.setScaleX((Float)animation.getAnimatedValue());
+                        EditTextCursorWatcher.this.setScaleY((Float)animation.getAnimatedValue());
                     }
                 });
                 anim2.setRepeatCount(1);
                 anim2.setRepeatMode(ValueAnimator.REVERSE);
                 if (event.getAction() == MotionEvent.ACTION_DOWN)    
-                anim2.start();
+                anim2.start();*/
                 return false;
             }
         });
