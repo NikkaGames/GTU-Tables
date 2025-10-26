@@ -1,15 +1,17 @@
 package ge.nikka.gtutables
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -43,7 +45,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,17 +63,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ge.nikka.gtutables.MainActivity.Companion.ActionButton
@@ -84,6 +78,7 @@ import ge.nikka.gtutables.ui.theme.GTUTablesTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.content.edit
 
 class MainActivity : ComponentActivity() {
 
@@ -269,7 +264,6 @@ class MainActivity : ComponentActivity() {
 
         var notFound = mutableStateOf(false)
         var isSearching = mutableStateOf(false)
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -292,11 +286,24 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
+    var prefs: SharedPreferences = context.getSharedPreferences("Table", Context.MODE_PRIVATE);
+
+    val blurRad = remember { Animatable(0f) }
+
+    LaunchedEffect(isSearching.value || notFound.value) {
+        val targetBlur = if (isSearching.value || notFound.value) 10f else 0f
+        blurRad.animateTo(
+            targetValue = targetBlur,
+            animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .offset(y = (-60).dp),
+            .offset(y = (-60).dp)
+            .blur(blurRad.value.dp),
         contentAlignment = Alignment.Center
     ) {
         var visible by remember { mutableStateOf(false) }
@@ -331,6 +338,15 @@ fun MainScreen() {
                 ) {
                     var query by remember { mutableStateOf("") }
                     var isChecked by remember { mutableStateOf(false) }
+                    if (prefs.contains("checkbox"))
+                        isChecked = prefs.getBoolean("checkbox", true)
+                    var tmp: Boolean by remember { mutableStateOf(true) }
+                    if (isChecked && tmp) {
+                        if (prefs.contains("table_id"))
+                            query = prefs.getString("table_id", null).toString()
+                        tmp = false
+                    }
+
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("GTU Table Fetcher",
                         fontSize = 28.sp,
@@ -363,7 +379,16 @@ fun MainScreen() {
                     ) {
                         ActionCheckbox(
                             checked = isChecked,
-                            onCheckedChange = { isChecked = it },
+                            onCheckedChange = {
+                                isChecked = it
+                                prefs.edit {
+                                    putBoolean("checkbox", it)
+                                }
+                                if (isChecked) {
+                                    if (prefs.contains("table_id"))
+                                        query = prefs.getString("table_id", null).toString()
+                                }
+                            },
                             label = "Save Group ID"
                         )
                     }
@@ -384,15 +409,26 @@ fun MainScreen() {
                     ) {
                         ActionButton(
                             onClick = {
+                                Utils.dismissKeyboard(context as Activity)
+                                if (!Utils.isInternetAvailable(context)) {
+                                    Toast.makeText(context, "No Internet Connection!", Toast.LENGTH_LONG).show()
+                                    return@ActionButton
+                                }
                                 scope.launch(Dispatchers.IO) {
                                     try {
                                         isSearching.value = true
                                         Singleton.instance.data = Utils.sendAndReceive(query)
                                         Singleton.instance.table = query
-                                        if (Singleton.instance.data.equals("NOT_FOUND") || Singleton.instance.data!!.contains("ECONNREFUSED")) {
+                                        if (Singleton.instance.data.equals("NOT_FOUND")
+                                            || Singleton.instance.data!!.contains("ECONNREFUSED")
+                                            || Singleton.instance.data!!.contains("UnknownHostException")
+                                        ) {
                                             isSearching.value = false
                                             notFound.value = true
                                         } else {
+                                            prefs.edit {
+                                                putString("table_id", query)
+                                            }
                                             isSearching.value = false
                                             withContext(Dispatchers.Main) {
                                                 context.startActivity(Intent(context, TableActivity::class.java))
@@ -473,6 +509,7 @@ fun MainScreen() {
             ModalBottomSheet(
                 onDismissRequest = {
                     notFound.value = false
+                    Singleton.instance.cleanUp()
                 },
                 containerColor = Color(0xFF191919),
                 contentColor = Color.White
@@ -493,7 +530,7 @@ fun MainScreen() {
                     Text(
                         modifier = Modifier
                             .padding(start = 32.dp, end = 32.dp),
-                        text = "Target user not found!",
+                        text = "Table ${Singleton.instance.table} not found!",
                         color = Color.White,
                         fontSize = 17.sp,
                         fontFamily = FontFamily(Font(R.font.google)),

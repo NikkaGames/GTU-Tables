@@ -1,7 +1,10 @@
 package ge.nikka.gtutables
 
-import android.R.string
+import android.app.Activity
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.view.inputmethod.InputMethodManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.*
@@ -12,6 +15,20 @@ import java.util.*
 
 class Utils {
     companion object {
+
+        fun isInternetAvailable(context: Context): Boolean {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }
+
+        fun dismissKeyboard(activity: Activity) {
+            val imm = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            if (null != activity.getCurrentFocus()) imm.hideSoftInputFromWindow(
+                activity.getCurrentFocus()!!.getApplicationWindowToken(), 0
+            )
+        }
 
         fun writeTextToFile(context: Context, fileName: String, text: String) {
             val file = File(context.filesDir, fileName)
