@@ -39,6 +39,7 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.toColorInt
 
 class TableActivity : ComponentActivity() {
 
@@ -66,7 +67,7 @@ class TableActivity : ComponentActivity() {
             ab.displayOptions = ActionBar.DISPLAY_SHOW_CUSTOM
             ab.setCustomView(textView, layout)
 
-            ab.setBackgroundDrawable(android.graphics.Color.DKGRAY.toDrawable())
+            ab.setBackgroundDrawable("#121212".toColorInt().toDrawable())
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
